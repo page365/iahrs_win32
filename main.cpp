@@ -2,6 +2,8 @@
 #include <windows.h>
 #include <stdio.h>
 
+// COM í¬íŠ¸ ë²ˆí˜¸ë¥¼ PCì— ì—°ê²°ëœ COM í¬íŠ¸ ë²ˆí˜¸ë¡œ ë³€ê²½í•˜ì‹­ì‹œì˜¤.
+// iAHRS ì„¼ì„œì˜ ê¸°ë³¸ í†µì‹  ì†ë„ëŠ” 115200 bps ì…ë‹ˆë‹¤.
 CSerialCOM com("\\\\.\\COM13", 115200);
 
 int SendRecv(const char* command, double* returned_data, int data_length);
@@ -39,24 +41,24 @@ int SendRecv(const char* command, double* returned_data, int data_length)
 
 	const int buff_size = 1024;
 	int  recv_len = 0;
-	char recv_buff[buff_size + 1];	// ¸¶Áö¸· EOS¸¦ Ãß°¡ÇÏ±â À§ÇØ + 1
+	char recv_buff[buff_size + 1];	// ë§ˆì§€ë§‰ EOSë¥¼ ì¶”ê°€í•˜ê¸° ìœ„í•´ + 1
 
 	DWORD time_start = GetTickCount();
 
 	while (recv_len < buff_size) {
 		int n = com.Recv(recv_buff + recv_len, buff_size - recv_len);
 		if (n < 0) {
-			// Åë½Å µµÁß ¿À·ù ¹ß»ı
+			// í†µì‹  ë„ì¤‘ ì˜¤ë¥˜ ë°œìƒ
 			return -1;
 		}
 		else if (n == 0) {
-			// ¾Æ¹«·± µ¥ÀÌÅÍµµ ¹ŞÁö ¸øÇß´Ù. 1ms ±â´Ù·Áº»´Ù.
+			// ì•„ë¬´ëŸ° ë°ì´í„°ë„ ë°›ì§€ ëª»í–ˆë‹¤. 1ms ê¸°ë‹¤ë ¤ë³¸ë‹¤.
 			Sleep(1);
 		}
 		else if (n > 0) {
 			recv_len += n;
 
-			// ¼ö½Å ¹®ÀÚ¿­ ³¡¿¡ \r ¶Ç´Â \nÀÌ µé¾î¿Ô´ÂÁö Ã¼Å©
+			// ìˆ˜ì‹  ë¬¸ìì—´ ëì— \r ë˜ëŠ” \nì´ ë“¤ì–´ì™”ëŠ”ì§€ ì²´í¬
 			if (recv_buff[recv_len - 1] == '\r' || recv_buff[recv_len - 1] == '\n') {
 				break;
 			}
@@ -69,14 +71,14 @@ int SendRecv(const char* command, double* returned_data, int data_length)
 	}
 	recv_buff[recv_len] = '\0';
 
-	// ¿¡·¯°¡ ¸®ÅÏ µÇ¾ú´ÂÁö Ã¼Å©ÇÑ´Ù.
+	// ì—ëŸ¬ê°€ ë¦¬í„´ ë˜ì—ˆëŠ”ì§€ ì²´í¬í•œë‹¤.
 	if (recv_len > 0) {
 		if (recv_buff[0] == '!') {
 			return -1;
 		}
 	}
 
-	// º¸³½ ¸í·É°ú µ¹¾Æ¿Â º¯¼ö¸íÀÌ °°ÀºÁö ºñ±³ÇÑ´Ù.
+	// ë³´ë‚¸ ëª…ë ¹ê³¼ ëŒì•„ì˜¨ ë³€ìˆ˜ëª…ì´ ê°™ì€ì§€ ë¹„êµí•œë‹¤.
 	if (strncmp(command, recv_buff, command_len - 1) == 0) {
 		if (recv_buff[command_len - 1] == '=') {
 			int data_count = 0;
@@ -85,7 +87,7 @@ int SendRecv(const char* command, double* returned_data, int data_length)
 			char* pp = NULL;
 
 			for (int i = 0; i < data_length; i++) {
-				if (p[0] == '0' && p[1] == 'x') {	// 16 Áø¼ö
+				if (p[0] == '0' && p[1] == 'x') {	// 16 ì§„ìˆ˜
 					returned_data[i] = strtol(p+2, &pp, 16);
 					data_count++;
 				}
