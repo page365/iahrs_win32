@@ -13,7 +13,8 @@ int SendRecv(const char* command, double* returned_data, int data_length);
 int main(void)
 {
 	const int TARGET_RESOLUTION	 = 1;	// 1-millisecond target resolution
-
+	
+	// Windows timer event가 1ms 주기로 동작하도록 합니다.
 	TIMECAPS tc;
 	timeGetDevCaps(&tc, sizeof(TIMECAPS));
 	UINT timerRes = min(max(tc.wPeriodMin, TARGET_RESOLUTION), tc.wPeriodMax);
