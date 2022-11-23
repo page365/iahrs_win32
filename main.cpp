@@ -1,38 +1,54 @@
 #include "SerialCOM.h"
 #include <windows.h>
 #include <stdio.h>
+#include <mmsystem.h>
+#pragma comment (lib, "winmm")
 
 // COM 포트 번호를 PC에 연결된 COM 포트 번호로 변경하십시오.
 // iAHRS 센서의 기본 통신 속도는 115200 bps 입니다.
-CSerialCOM com("\\\\.\\COM13", 115200);
+CSerialCOM com("\\\\.\\COM6", 115200);
 
 int SendRecv(const char* command, double* returned_data, int data_length);
 
 int main(void)
 {
+	const int TARGET_RESOLUTION	 = 1;	// 1-millisecond target resolution
+
+	TIMECAPS tc;
+	timeGetDevCaps(&tc, sizeof(TIMECAPS));
+	UINT timerRes = min(max(tc.wPeriodMin, TARGET_RESOLUTION), tc.wPeriodMax);
+	timeBeginPeriod(timerRes); 
+
 	com.Open();
+	com.SetTimeout (1, 10, 0);
 
 	if (com.IsConnected()) {
 		double data[10];
 
 		for (int i = 0; i < 1000; i++) {
+			DWORD t1 = timeGetTime(); 
 			int no_data = SendRecv("e\n", data, 10);	// Read Euler angle
+			DWORD t2 = timeGetTime(); 
 			if (no_data >= 3) {
-				printf("Euler angle = %f, %f, %f\n", data[0], data[1], data[2]);
+				printf("[%d] Euler angle = %f, %f, %f\n", t2 - t1, data[0], data[1], data[2]);
 			}
 
+			DWORD t3 = timeGetTime(); 
 			no_data = SendRecv("q\n", data, 10);		// Read Quaternion
+			DWORD t4 = timeGetTime(); 
 			if (no_data >= 4) {
-				printf("Quaternion = %f, %f, %f, %f\n", data[0], data[1], data[2], data[3]);
+				printf("[%d] Quaternion = %f, %f, %f, %f\n", t2 - t1, data[0], data[1], data[2], data[3]);
 			}
 			Sleep(100);
 		}
 	}
+
+	timeEndPeriod (timerRes);
 }
 
 int SendRecv(const char* command, double* returned_data, int data_length)
 {
-	#define COMM_RECV_TIMEOUT	10	// ms
+	#define COMM_RECV_TIMEOUT	100	// ms
 
 	int command_len = strlen(command);
 
@@ -53,13 +69,13 @@ int SendRecv(const char* command, double* returned_data, int data_length)
 		}
 		else if (n == 0) {
 			// 아무런 데이터도 받지 못했다. 1ms 기다려본다.
-			Sleep(1);
+			Sleep(0);
 		}
 		else if (n > 0) {
 			recv_len += n;
 
-			// 수신 문자열 끝에 \r 또는 \n이 들어왔는지 체크
-			if (recv_buff[recv_len - 1] == '\r' || recv_buff[recv_len - 1] == '\n') {
+			// 수신 문자열 끝에 \r, \n이 들어왔는지 체크
+			if (recv_buff[recv_len - 2] == '\r' && recv_buff[recv_len - 1] == '\n') {
 				break;
 			}
 		}
